@@ -13,6 +13,13 @@ class ViewController: UIViewController {
     
     var context: NSManagedObjectContext!
     
+    lazy var dateFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateStyle = .short
+        df.timeStyle = .none
+        return df
+    }()
+    
     @IBOutlet weak var segmentedControl: UISegmentedControl!
     @IBOutlet weak var markLabel: UILabel!
     @IBOutlet weak var modelLabel: UILabel!
@@ -32,6 +39,18 @@ class ViewController: UIViewController {
     
     @IBAction func rateItPressed(_ sender: UIButton) {
         
+    }
+    
+    private func insertDataFrom(selectedCar car: Car) {
+        carImageView.image = UIImage(data: car.imageData!)
+        markLabel.text = car.mark
+        modelLabel.text = car.model
+        myChoiceImageView.isHidden = !(car.myChoice)
+        ratingLabel.text = "Rating: \(car.rating) / 10"
+        numberOfTripsLabel.text = "Number of trips: \(car.timesDriven)"
+        
+        lastTimeStartedLabel.text = "Last time started: \(dateFormatter.string(from: car.lastStarted!))"
+        segmentedControl.tintColor = car.tintColor as? UIColor
     }
     
     private func getDataFromFile() {
@@ -66,7 +85,7 @@ class ViewController: UIViewController {
             car.rating = carDictionary ["rating"] as! Double
             car.lastStarted = carDictionary ["lastStarted"] as? Date
             car.timesDriven = carDictionary ["timesDriven"] as! Int16
-            car.myChoise = carDictionary ["myChoise"] as! Bool
+            car.myChoice = carDictionary ["myChoice"] as! Bool
             
             let imageName = carDictionary ["imageName"] as? String
             let image = UIImage(named: imageName!)
@@ -91,7 +110,17 @@ class ViewController: UIViewController {
         
         getDataFromFile()
         
+        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
+        let mark = segmentedControl.titleForSegment(at: 0)
+        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            let car = results.first
+            insertDataFrom(selectedCar: car!)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
-    
 }
 
