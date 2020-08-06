@@ -10,6 +10,7 @@ import UIKit
 import CoreData
 
 class ViewController: UIViewController {
+    var car: Car!
     
     var context: NSManagedObjectContext!
     
@@ -34,11 +35,62 @@ class ViewController: UIViewController {
     }
     
     @IBAction func startEnginePressed(_ sender: UIButton) {
+        car.timesDriven += 1
+        car.lastStarted = Date()
         
+        // Сохраняем данные в базу данных.
+        do {
+            try context.save()
+            insertDataFrom(selectedCar: car)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
     
     @IBAction func rateItPressed(_ sender: UIButton) {
+        // Создаём Alert Controller
+        let alertController = UIAlertController(title: "Rate it", message: "Rate thiscar please", preferredStyle: .alert)
+        // СОздаём действие сохранения рейтинга
+        let rateAction = UIAlertAction(title: "Rate", style: .default) { action in
+            if let text = alertController.textFields?.first?.text {
+                self.update(rating: (text as NSString).doubleValue)
+            }
+        }
         
+        // Создаём действие выхода из Alert Controller
+        let cancelAction = UIAlertAction(title: "Cancel", style: .default)
+        
+        alertController.addTextField { textField in
+            textField.keyboardType = .numberPad
+        }
+        
+        // Добавляем действия в контроллер
+        alertController.addAction(rateAction)
+        alertController.addAction(cancelAction)
+        
+        // Вызываем настроенный контрллер
+        present(alertController, animated: true)
+    }
+    
+    // Метод для сохранения оценки в базу данных
+    private func update(rating: Double) {
+        // Присваиваем рейтинг
+        car.rating = rating
+        
+        // Сохраняем изменения
+        do {
+            try context.save()
+            insertDataFrom(selectedCar: car)
+        } catch let error as NSError {
+            let alertController = UIAlertController(title: "Wrong value", message: "Wrong input", preferredStyle: .alert)
+            let okAction = UIAlertAction(title: "OK", style: .default)
+
+            alertController.addAction(okAction)
+            
+            present(alertController, animated: true)
+            
+            print(error.localizedDescription)
+        }
     }
     
     private func insertDataFrom(selectedCar car: Car) {
@@ -50,7 +102,7 @@ class ViewController: UIViewController {
         numberOfTripsLabel.text = "Number of trips: \(car.timesDriven)"
         
         lastTimeStartedLabel.text = "Last time started: \(dateFormatter.string(from: car.lastStarted!))"
-        segmentedControl.tintColor = car.tintColor as? UIColor
+        segmentedControl.backgroundColor = car.tintColor as? UIColor
     }
     
     private func getDataFromFile() {
@@ -116,7 +168,7 @@ class ViewController: UIViewController {
         
         do {
             let results = try context.fetch(fetchRequest)
-            let car = results.first
+            car = results.first
             insertDataFrom(selectedCar: car!)
         } catch let error as NSError {
             print(error.localizedDescription)
