@@ -21,7 +21,20 @@ class ViewController: UIViewController {
         return df
     }()
     
-    @IBOutlet weak var segmentedControl: UISegmentedControl!
+    @IBOutlet weak var segmentedControl: UISegmentedControl! {
+        didSet{
+            updateSegmentedControl()
+            segmentedControl.selectedSegmentTintColor = .white
+            
+            // Настраиваем атрибуты текста
+            let whiteTitltTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+            let blackTitltTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
+            
+            // Если сегмент выделен, то текст будет черным, а остальной текст белым
+            UISegmentedControl.appearance().setTitleTextAttributes(whiteTitltTextAttributes, for: .normal)
+            UISegmentedControl.appearance().setTitleTextAttributes(blackTitltTextAttributes, for: .selected)
+        }
+    }
     @IBOutlet weak var markLabel: UILabel!
     @IBOutlet weak var modelLabel: UILabel!
     @IBOutlet weak var carImageView: UIImageView!
@@ -31,7 +44,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var myChoiceImageView: UIImageView!
     
     @IBAction func segmentedCtrlPressed(_ sender: UISegmentedControl) {
-        
+         updateSegmentedControl()
     }
     
     @IBAction func startEnginePressed(_ sender: UIButton) {
@@ -70,6 +83,20 @@ class ViewController: UIViewController {
         
         // Вызываем настроенный контрллер
         present(alertController, animated: true)
+    }
+    
+    private func updateSegmentedControl() {
+        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
+        let mark = segmentedControl.titleForSegment(at: segmentedControl.selectedSegmentIndex)
+        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            car = results.first
+            insertDataFrom(selectedCar: car!)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
     
     // Метод для сохранения оценки в базу данных
@@ -161,18 +188,6 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         getDataFromFile()
-        
-        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
-        let mark = segmentedControl.titleForSegment(at: 0)
-        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            car = results.first
-            insertDataFrom(selectedCar: car!)
-        } catch let error as NSError {
-            print(error.localizedDescription)
-        }
     }
 }
 
